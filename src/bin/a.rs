@@ -1,6 +1,6 @@
 use rand::prelude::*;
 
-const TIMELIMIT: f64 = 1.85;
+const TIMELIMIT: f64 = 1.55;
 
 fn main() {
     let mut timer = Timer::new();
@@ -8,7 +8,7 @@ fn main() {
     let input = read_input();
     let mut output = greedy(&input);
     // eprintln!("{}", compute_score(&input, &output));
-    // annealing(&input, &mut output, &mut timer, &mut rng);
+    annealing(&input, &mut output, &mut timer, &mut rng);
     output.write();
     // eprintln!("{}", compute_score(&input, &output));
 }
@@ -16,8 +16,8 @@ fn main() {
 fn greedy(input: &Input) -> Output {
     let mut p = vec![0; input.n];
     // 客を見て、入ってないやつがいたら一番近い頂点のパワーを調整
-    let mut nearest_station_from_resident = vec![(0, 0); input.k];
-    for (k, r) in input.residents.iter().enumerate() {
+    // let mut nearest_station_from_resident = vec![(0, 0); input.k];
+    for (_, r) in input.residents.iter().enumerate() {
         let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
         let mut min_i = 0;
         let mut contain = false;
@@ -32,7 +32,7 @@ fn greedy(input: &Input) -> Output {
                 contain = true;
             }
         }
-        nearest_station_from_resident[k] = (min_i, min_dist);
+        // nearest_station_from_resident[k] = (min_i, min_dist);
         if !contain {
             p[min_i] = min_dist;
         }
@@ -82,7 +82,7 @@ fn annealing(
     timer: &mut Timer,
     rng: &mut rand_chacha::ChaCha20Rng,
 ) -> i64 {
-    const T0: f64 = 10000.0;
+    const T0: f64 = 100.0;
     const T1: f64 = 100.0;
     let mut temp = T0;
     let mut prob;
@@ -142,15 +142,29 @@ fn annealing(
         let mut new_out = output.clone();
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
-        let i = rng.gen_range(0, input.n);
-        if new_out.powers[i] == 5000 {
-            new_out.powers[i] -= 1;
-        } else if new_out.powers[i] == 0 {
-            new_out.powers[i] += 1;
-        } else if rng.gen_bool(0.5) {
-            new_out.powers[i] -= 1;
-        } else {
-            new_out.powers[i] += 1;
+        let rng_i = rng.gen_range(0, input.n);
+        new_out.powers[rng_i] = 0;
+        for (_, r) in input.residents.iter().enumerate() {
+            let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
+            let mut min_i = 0;
+            let mut contain = false;
+            for (i, station) in input.stations.iter().enumerate() {
+                if rng_i == i {
+                    continue;
+                }
+                let dist = r.calc_sq_dist(station);
+                let dist = (dist as f64).sqrt().ceil() as i32;
+                if min_dist > dist {
+                    min_dist = dist;
+                    min_i = i;
+                }
+                if dist <= new_out.powers[i] {
+                    contain = true;
+                }
+            }
+            if !contain {
+                new_out.powers[min_i] = min_dist;
+            }
         }
         // edges について
         // for _ in 0..5 {
