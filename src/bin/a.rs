@@ -15,7 +15,29 @@ fn main() {
 }
 
 fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
-    let p = (0..input.n).map(|_| rng.gen_range(100, 5000)).collect_vec();
+    let mut p = (0..input.n).map(|_| rng.gen_range(100, 1000)).collect_vec();
+    // 客を見て、入ってないやつがいたら一番近い頂点のパワーを調整
+    let mut nearest_station_from_resident = vec![(0, 0); input.k];
+    for (k, r) in input.residents.iter().enumerate() {
+        let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
+        let mut min_i = 0;
+        let mut contain = false;
+        for (i, station) in input.stations.iter().enumerate() {
+            let dist = r.calc_sq_dist(station);
+            let dist = (dist as f64).sqrt().ceil() as i32;
+            if min_dist > dist {
+                min_dist = dist;
+                min_i = i;
+            }
+            if dist <= p[i] {
+                contain = true;
+            }
+        }
+        nearest_station_from_resident[k] = (min_i, min_dist);
+        if !contain {
+            p[min_i] = min_dist;
+        }
+    }
     let mut b = vec![false; input.m];
     // クラスカル
     let sorted_edges = {
@@ -82,35 +104,37 @@ fn annealing(
                 }
             }
             // 頂点0に繋がっていない辺をOFF に
-            for (i, e) in input.edges.iter().enumerate() {
-                if !output.edges[i] {
-                    continue;
-                }
-                if !is_connected[e.0] || !is_connected[e.1] {
-                    output.edges[i] = false;
-                }
-            }
+            // for (i, e) in input.edges.iter().enumerate() {
+            //     if !output.edges[i] {
+            //         continue;
+            //     }
+            //     if !is_connected[e.0] || !is_connected[e.1] {
+            //         output.edges[i] = false;
+            //     }
+            // }
         }
         count += 1;
 
         let mut new_out = output.clone();
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
-        let i = rng.gen_range(0, input.n);
-        if new_out.powers[i] >= 4590 {
-            new_out.powers[i] -= rng.gen_range(2, 25);
-        } else if new_out.powers[i] <= 50 {
-            new_out.powers[i] += rng.gen_range(2, 25);
-        } else if rng.gen_bool(0.5) {
-            new_out.powers[i] -= rng.gen_range(2, 25);
-        } else {
-            new_out.powers[i] += rng.gen_range(2, 25);
+        for _ in 0..5 {
+            let i = rng.gen_range(0, input.n);
+            if new_out.powers[i] >= 4974 {
+                new_out.powers[i] -= rng.gen_range(2, 25);
+            } else if new_out.powers[i] <= 26 {
+                new_out.powers[i] += rng.gen_range(2, 25);
+            } else if rng.gen_bool(0.5) {
+                new_out.powers[i] -= rng.gen_range(2, 25);
+            } else {
+                new_out.powers[i] += rng.gen_range(2, 25);
+            }
         }
         // edges について
-        for _ in 0..5 {
-            let i = rng.gen_range(0, input.m);
-            new_out.edges[i] ^= true;
-        }
+        // for _ in 0..5 {
+        //     let i = rng.gen_range(0, input.m);
+        //     new_out.edges[i] ^= true;
+        // }
         let new_score = compute_score(input, &new_out);
         prob = f64::exp((new_score - now_score) as f64 / temp);
         if now_score < new_score || rng.gen_bool(prob) {
