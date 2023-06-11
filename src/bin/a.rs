@@ -88,14 +88,14 @@ fn annealing(
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
         let i = rng.gen_range(0, input.n);
-        if new_out.powers[i] >= 4090 {
-            new_out.powers[i] -= 10;
-        } else if new_out.powers[i] <= 110 {
-            new_out.powers[i] += 10;
+        if new_out.powers[i] >= 4590 {
+            new_out.powers[i] -= rng.gen_range(2, 25);
+        } else if new_out.powers[i] <= 50 {
+            new_out.powers[i] += rng.gen_range(2, 25);
         } else if rng.gen_bool(0.5) {
-            new_out.powers[i] -= 10;
+            new_out.powers[i] -= rng.gen_range(2, 25);
         } else {
-            new_out.powers[i] += 10;
+            new_out.powers[i] += rng.gen_range(2, 25);
         }
         // edges について
         for _ in 0..5 {
