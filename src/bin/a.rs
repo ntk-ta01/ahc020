@@ -13,7 +13,7 @@ fn main() {
 }
 
 fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
-    let p = vec![2500; input.n];
+    let p = (0..input.n).map(|_| rng.gen_range(0, 5000)).collect_vec();
     let b = (0..input.m).map(|_| rng.gen_bool(0.5)).collect_vec();
 
     Output {
