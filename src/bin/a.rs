@@ -76,9 +76,18 @@ fn annealing(
             // 頂点0につながっていない頂点のpowerを0に
             let is_connected = output.get_connection_status(input);
 
-            for (i, b) in is_connected.into_iter().enumerate() {
-                if !b {
+            for (i, b) in is_connected.iter().enumerate() {
+                if !*b {
                     output.powers[i] = 0;
+                }
+            }
+            // 頂点0に繋がっていない辺をOFF に
+            for (i, e) in input.edges.iter().enumerate() {
+                if !output.edges[i] {
+                    continue;
+                }
+                if !is_connected[e.0] || !is_connected[e.1] {
+                    output.edges[i] = false;
                 }
             }
         }
