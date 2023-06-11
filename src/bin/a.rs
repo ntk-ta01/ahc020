@@ -16,28 +16,30 @@ fn main() {
 
 fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
     let p = (0..input.n).map(|_| rng.gen_range(100, 5000)).collect_vec();
-    let b = (0..input.m)
-        .map(|m| {
-            if input.edges[m].0 == 0 || input.edges[m].1 == 0 {
-                return true;
-            }
-            rng.gen_bool(0.5)
-        })
-        .collect_vec();
-
-    let mut output = Output {
-        powers: p,
-        edges: b,
+    let mut b = vec![false; input.m];
+    // クラスカル
+    let sorted_edges = {
+        let mut edges = input
+            .edges
+            .clone()
+            .into_iter()
+            .enumerate()
+            .map(|(i, e)| (i, e))
+            .collect::<Vec<_>>();
+        edges.sort_by_key(|(_, e)| e.2);
+        edges
     };
-    let is_connected = output.get_connection_status(input);
-
-    for (i, b) in is_connected.into_iter().enumerate() {
-        if !b {
-            output.powers[i] = 0;
+    let mut dsu = Dsu::new(input.n);
+    for (i, (u, v, _)) in sorted_edges {
+        if !dsu.same(u, v) {
+            dsu.merge(u, v);
+            b[i] = true;
         }
     }
-
-    output
+    Output {
+        powers: p,
+        edges: b,
+    }
 }
 
 fn annealing(
@@ -71,6 +73,7 @@ fn annealing(
             // temp = s_temp.powf(1.0 - passed) * e_temp.powf(passed);
             count = 0;
 
+            // 頂点0につながっていない頂点のpowerを0に
             let is_connected = output.get_connection_status(input);
 
             for (i, b) in is_connected.into_iter().enumerate() {
