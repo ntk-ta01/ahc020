@@ -142,35 +142,63 @@ fn annealing(
         let mut new_out = output.clone();
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
-        let rng_i = rng.gen_range(0, input.n);
-        new_out.powers[rng_i] = 0;
-        for (_, r) in input.residents.iter().enumerate() {
-            let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
-            let mut min_i = 0;
-            let mut contain = false;
-            for (i, station) in input.stations.iter().enumerate() {
-                if rng_i == i {
-                    continue;
-                }
-                let dist = r.calc_sq_dist(station);
-                let dist = (dist as f64).sqrt().ceil() as i32;
-                if min_dist > dist {
-                    min_dist = dist;
-                    min_i = i;
-                }
-                if dist <= new_out.powers[i] {
-                    contain = true;
-                }
+        for _ in 0..rng.gen_range(1, 5) {
+            let mut rng_i = rng.gen_range(0, input.n);
+            while new_out.powers[rng_i] == 0 {
+                rng_i += 1;
+                rng_i %= input.n;
             }
-            if !contain {
-                new_out.powers[min_i] = min_dist;
+            new_out.powers[rng_i] = 0;
+            for (_, r) in input.residents.iter().enumerate() {
+                let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
+                let mut min_i = 0;
+                let mut contain = false;
+                for (i, station) in input.stations.iter().enumerate() {
+                    if rng_i == i {
+                        continue;
+                    }
+                    let dist = r.calc_sq_dist(station);
+                    let dist = (dist as f64).sqrt().ceil() as i32;
+                    if min_dist > dist {
+                        min_dist = dist;
+                        min_i = i;
+                    }
+                    if dist <= new_out.powers[i] {
+                        contain = true;
+                    }
+                }
+                if !contain {
+                    new_out.powers[min_i] = min_dist;
+                }
             }
         }
         // edges について
-        // for _ in 0..5 {
-        //     let i = rng.gen_range(0, input.m);
-        //     new_out.edges[i] ^= true;
+        // ある辺を使うのを禁止してクラスカル
+        // let mut b = vec![false; input.m];
+        // let rng_i = rng.gen_range(0, input.m);
+        // // クラスカル
+        // let sorted_edges = {
+        //     let mut edges = input
+        //         .edges
+        //         .clone()
+        //         .into_iter()
+        //         .enumerate()
+        //         .map(|(i, e)| (i, e))
+        //         .collect::<Vec<_>>();
+        //     edges.sort_by_key(|(_, e)| e.2);
+        //     edges
+        // };
+        // let mut dsu = Dsu::new(input.n);
+        // for (i, (u, v, _)) in sorted_edges {
+        //     if rng_i == i {
+        //         continue;
+        //     }
+        //     if !dsu.same(u, v) {
+        //         dsu.merge(u, v);
+        //         b[i] = true;
+        //     }
         // }
+        // new_out.edges = b;
         let new_score = compute_score(input, &new_out);
         prob = f64::exp((new_score - now_score) as f64 / temp);
         if now_score < new_score || rng.gen_bool(prob) {
