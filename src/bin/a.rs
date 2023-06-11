@@ -68,13 +68,13 @@ fn annealing(
         let i = rng.gen_range(0, input.m);
         new_out.edges[i] ^= true;
         let new_score = compute_score(input, &new_out);
-        prob = f64::exp((now_score - new_score) as f64 / temp);
-        if now_score > new_score || rng.gen_bool(prob) {
+        prob = f64::exp((new_score - now_score) as f64 / temp);
+        if now_score < new_score || rng.gen_bool(prob) {
             now_score = new_score;
             *output = new_out;
         }
 
-        if best_score > now_score {
+        if best_score < now_score {
             best_score = now_score;
             best_output = output.clone();
         }
