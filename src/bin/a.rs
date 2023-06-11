@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use rand::prelude::*;
 
 const TIMELIMIT: f64 = 1.85;
@@ -7,15 +6,15 @@ fn main() {
     let mut timer = Timer::new();
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = read_input();
-    let mut output = greedy(&input, &mut rng);
+    let mut output = greedy(&input);
     // eprintln!("{}", compute_score(&input, &output));
     annealing(&input, &mut output, &mut timer, &mut rng);
     output.write();
     // eprintln!("{}", compute_score(&input, &output));
 }
 
-fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
-    let mut p = (0..input.n).map(|_| rng.gen_range(100, 1000)).collect_vec();
+fn greedy(input: &Input) -> Output {
+    let mut p = vec![0; input.n];
     // 客を見て、入ってないやつがいたら一番近い頂点のパワーを調整
     let mut nearest_station_from_resident = vec![(0, 0); input.k];
     for (k, r) in input.residents.iter().enumerate() {
@@ -112,6 +111,8 @@ fn annealing(
             //         output.edges[i] = false;
             //     }
             // }
+            // 頂点0につながっている頂点で、現在の出力範囲内にいる最も遠い客は入るように出力を小さくする
+            // 客が出力範囲内にいないときは、出力を0にする
         }
         count += 1;
 
