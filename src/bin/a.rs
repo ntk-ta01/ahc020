@@ -1,25 +1,43 @@
 use itertools::Itertools;
 use rand::prelude::*;
 
-const TIMELIMIT: f64 = 1.75;
+const TIMELIMIT: f64 = 1.85;
 
 fn main() {
     let mut timer = Timer::new();
-    let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(7_300_000_000);
+    let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = read_input();
     let mut output = greedy(&input, &mut rng);
+    // eprintln!("{}", compute_score(&input, &output));
     annealing(&input, &mut output, &mut timer, &mut rng);
     output.write();
+    // eprintln!("{}", compute_score(&input, &output));
 }
 
 fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
-    let p = (0..input.n).map(|_| rng.gen_range(0, 5000)).collect_vec();
-    let b = (0..input.m).map(|_| rng.gen_bool(0.5)).collect_vec();
+    let p = (0..input.n).map(|_| rng.gen_range(100, 5000)).collect_vec();
+    let b = (0..input.m)
+        .map(|m| {
+            if input.edges[m].0 == 0 || input.edges[m].1 == 0 {
+                return true;
+            }
+            rng.gen_bool(0.5)
+        })
+        .collect_vec();
 
-    Output {
+    let mut output = Output {
         powers: p,
         edges: b,
+    };
+    let is_connected = output.get_connection_status(input);
+
+    for (i, b) in is_connected.into_iter().enumerate() {
+        if !b {
+            output.powers[i] = 0;
+        }
     }
+
+    output
 }
 
 fn annealing(
@@ -28,8 +46,8 @@ fn annealing(
     timer: &mut Timer,
     rng: &mut rand_chacha::ChaCha20Rng,
 ) -> i64 {
-    const T0: f64 = 100.0;
-    const T1: f64 = 0.01;
+    const T0: f64 = 10.0;
+    const T1: f64 = 0.1;
     let mut temp = T0;
     let mut prob;
 
@@ -40,14 +58,26 @@ fn annealing(
     let mut best_output = output.clone();
     loop {
         if count >= 100 {
+            // if count % 100 == 0 {
             let passed = timer.get_time() / TIMELIMIT;
             if passed >= 1.0 {
                 break;
             }
+            // if count % 1000 == 0 {
+            //     best_output.write();
+            // }
             // eprintln!("{} {}", temp, now_score);
             temp = T0.powf(1.0 - passed) * T1.powf(passed);
             // temp = s_temp.powf(1.0 - passed) * e_temp.powf(passed);
             count = 0;
+
+            let is_connected = output.get_connection_status(input);
+
+            for (i, b) in is_connected.into_iter().enumerate() {
+                if !b {
+                    output.powers[i] = 0;
+                }
+            }
         }
         count += 1;
 
@@ -55,18 +85,20 @@ fn annealing(
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
         let i = rng.gen_range(0, input.n);
-        if new_out.powers[i] == 5000 {
-            new_out.powers[i] -= 1;
-        } else if new_out.powers[i] == 0 {
-            new_out.powers[i] += 1;
+        if new_out.powers[i] >= 4090 {
+            new_out.powers[i] -= 10;
+        } else if new_out.powers[i] <= 110 {
+            new_out.powers[i] += 10;
         } else if rng.gen_bool(0.5) {
-            new_out.powers[i] -= 1;
+            new_out.powers[i] -= 10;
         } else {
-            new_out.powers[i] += 1;
+            new_out.powers[i] += 10;
         }
         // edges について
-        let i = rng.gen_range(0, input.m);
-        new_out.edges[i] ^= true;
+        for _ in 0..5 {
+            let i = rng.gen_range(0, input.m);
+            new_out.edges[i] ^= true;
+        }
         let new_score = compute_score(input, &new_out);
         prob = f64::exp((new_score - now_score) as f64 / temp);
         if now_score < new_score || rng.gen_bool(prob) {
