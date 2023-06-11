@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use rand::prelude::*;
 
-const TIMELIMIT: f64 = 1.95;
+const TIMELIMIT: f64 = 1.75;
 
 fn main() {
     let mut timer = Timer::new();
