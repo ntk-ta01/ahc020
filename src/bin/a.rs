@@ -1,17 +1,99 @@
+use rand::prelude::*;
+
+const TIMELIMIT: f64 = 1.95;
+
 fn main() {
+    let mut timer = Timer::new();
+    let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(7_300_000_000);
     let input = read_input();
-    let out = greedy(&input);
-    out.write();
+    let mut output = greedy(&input);
+    annealing(&input, &mut output, &mut timer, &mut rng);
+    output.write();
 }
 
 fn greedy(input: &Input) -> Output {
-    let p = vec![5000; input.n];
+    let p = vec![2500; input.n];
     let b = vec![true; input.m];
 
     Output {
         powers: p,
         edges: b,
     }
+}
+
+fn annealing(
+    input: &Input,
+    output: &mut Output,
+    timer: &mut Timer,
+    rng: &mut rand_chacha::ChaCha20Rng,
+) -> i64 {
+    const T0: f64 = 100.0;
+    const T1: f64 = 0.01;
+    let mut temp = T0;
+    let mut prob;
+
+    let mut count = 0;
+    let mut now_score = compute_score(input, output);
+
+    let mut best_score = now_score;
+    let mut best_output = output.clone();
+    loop {
+        if count >= 100 {
+            let passed = timer.get_time() / TIMELIMIT;
+            if passed >= 1.0 {
+                break;
+            }
+            // eprintln!("{} {}", temp, now_score);
+            temp = T0.powf(1.0 - passed) * T1.powf(passed);
+            // temp = s_temp.powf(1.0 - passed) * e_temp.powf(passed);
+            count = 0;
+        }
+        count += 1;
+
+        let mut new_out = output.clone();
+        // 近傍解生成。powers と edges について同時焼きなまし
+        // powers について
+        let i = rng.gen_range(0, input.n);
+        if new_out.powers[i] == 5000 {
+            new_out.powers[i] -= 1;
+        } else if new_out.powers[i] == 0 {
+            new_out.powers[i] += 1;
+        } else if rng.gen_bool(0.5) {
+            new_out.powers[i] -= 1;
+        } else {
+            new_out.powers[i] += 1;
+        }
+        // edges について
+        let i = rng.gen_range(0, input.m);
+        new_out.edges[i] ^= true;
+        let new_score = compute_score(input, &new_out);
+        prob = f64::exp((now_score - new_score) as f64 / temp);
+        if now_score > new_score || rng.gen_bool(prob) {
+            now_score = new_score;
+            *output = new_out;
+        }
+
+        if best_score > now_score {
+            best_score = now_score;
+            best_output = output.clone();
+        }
+    }
+    // eprintln!("{}", best_score);
+    *output = best_output;
+    best_score
+}
+
+fn compute_score(input: &Input, out: &Output) -> i64 {
+    let broadcasted_count = out.get_broadcasted_count(&input);
+
+    let score = if broadcasted_count < input.k {
+        (1e6 * (broadcasted_count + 1) as f64 / input.k as f64).round() as i64
+    } else {
+        let cost = out.calc_cost(input);
+        (1e6 * (1.0 + 1e8 / (cost as f64 + 1e7))).round() as i64
+    };
+
+    score
 }
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
@@ -62,6 +144,7 @@ fn read_input() -> Input {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Output {
     pub powers: Vec<i32>,
     pub edges: Vec<bool>,
@@ -221,5 +304,33 @@ impl Dsu {
             .into_iter()
             .filter(|x| !x.is_empty())
             .collect::<Vec<Vec<usize>>>()
+    }
+}
+
+fn get_time() -> f64 {
+    let t = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap();
+    t.as_secs() as f64 + t.subsec_nanos() as f64 * 1e-9
+}
+
+struct Timer {
+    start_time: f64,
+}
+
+impl Timer {
+    fn new() -> Timer {
+        Timer {
+            start_time: get_time(),
+        }
+    }
+
+    fn get_time(&self) -> f64 {
+        get_time() - self.start_time
+    }
+
+    #[allow(dead_code)]
+    fn reset(&mut self) {
+        self.start_time = 0.0;
     }
 }
