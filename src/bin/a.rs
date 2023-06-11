@@ -3,16 +3,14 @@ use std::collections::VecDeque;
 use rand::prelude::*;
 use rustc_hash::FxHashMap;
 
-const TIMELIMIT: f64 = 1.25;
+const TIMELIMIT: f64 = 1.65;
 
 fn main() {
     let mut timer = Timer::new();
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = read_input();
     let mut output = greedy(&input);
-    // eprintln!("{}", compute_score(&input, &output));
     annealing(&input, &mut output, &mut timer, &mut rng);
-    // output.write();
     // 葉であって、出力が0の駅につながる辺を削除
     // 木を見ているので、葉であることは次数1と同じ
     let mut degree = vec![0; input.n];
@@ -143,53 +141,17 @@ fn annealing(
     let mut best_output = output.clone();
     loop {
         if count >= 100 {
-            // if count % 100 == 0 {
             let passed = timer.get_time() / TIMELIMIT;
             if passed >= 1.0 {
                 break;
             }
-            // if count % 1000 == 0 {
-            //     best_output.write();
-            // }
-            // eprintln!("{} {}", temp, now_score);
             temp = T0.powf(1.0 - passed) * T1.powf(passed);
-            // temp = s_temp.powf(1.0 - passed) * e_temp.powf(passed);
             count = 0;
-
-            // 頂点0につながっていない頂点のpowerを0に
-            // let is_connected = output.get_connection_status(input);
-            // for (i, b) in is_connected.iter().enumerate() {
-            //     if !*b {
-            //         output.powers[i] = 0;
-            //     }
-            // }
-            // 頂点0に繋がっていない辺をOFF に
-            // for (i, e) in input.edges.iter().enumerate() {
-            //     if !output.edges[i] {
-            //         continue;
-            //     }
-            //     if !is_connected[e.0] || !is_connected[e.1] {
-            //         output.edges[i] = false;
-            //     }
-            // }
-            // 頂点0につながっている頂点で、現在の出力範囲内にいる最も遠い客は入るように出力を小さくする
-            // 客が出力範囲内にいないときは、出力を0にする
-            // for (i, station) in input.stations.iter().enumerate() {
-            //     let mut max_dist = 0;
-            //     for r in input.residents.iter() {
-            //         let dist = r.calc_sq_dist(station);
-            //         let dist = (dist as f64).sqrt().ceil() as i32;
-            //         if dist <= output.powers[i] && max_dist < dist {
-            //             max_dist = dist;
-            //         }
-            //     }
-            //     output.powers[i] = max_dist;
-            // }
         }
         count += 1;
 
         let mut new_out = output.clone();
-        // 近傍解生成。powers と edges について同時焼きなまし
+        // 近傍解生成。powers について同時焼きなまし
         // powers について
         let rng_i = rng.gen_range(0, input.n);
         new_out.powers[rng_i] = 0;
@@ -215,33 +177,6 @@ fn annealing(
                 new_out.powers[min_i] = min_dist;
             }
         }
-        // edges について
-        // ある辺を使うのを禁止してクラスカル
-        // let mut b = vec![false; input.m];
-        // let rng_i = rng.gen_range(0, input.m);
-        // // クラスカル
-        // let sorted_edges = {
-        //     let mut edges = input
-        //         .edges
-        //         .clone()
-        //         .into_iter()
-        //         .enumerate()
-        //         .map(|(i, e)| (i, e))
-        //         .collect::<Vec<_>>();
-        //     edges.sort_by_key(|(_, e)| e.2);
-        //     edges
-        // };
-        // let mut dsu = Dsu::new(input.n);
-        // for (i, (u, v, _)) in sorted_edges {
-        //     if rng_i == i {
-        //         continue;
-        //     }
-        //     if !dsu.same(u, v) {
-        //         dsu.merge(u, v);
-        //         b[i] = true;
-        //     }
-        // }
-        // new_out.edges = b;
         let new_score = compute_score(input, &new_out);
         prob = f64::exp((new_score - now_score) as f64 / temp);
         if now_score < new_score || rng.gen_bool(prob) {
