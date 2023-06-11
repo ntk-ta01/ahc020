@@ -1,6 +1,9 @@
-use rand::prelude::*;
+use std::collections::VecDeque;
 
-const TIMELIMIT: f64 = 1.55;
+use rand::prelude::*;
+use rustc_hash::FxHashMap;
+
+const TIMELIMIT: f64 = 1.25;
 
 fn main() {
     let mut timer = Timer::new();
@@ -9,6 +12,52 @@ fn main() {
     let mut output = greedy(&input);
     // eprintln!("{}", compute_score(&input, &output));
     annealing(&input, &mut output, &mut timer, &mut rng);
+    // output.write();
+    // 葉であって、出力が0の駅につながる辺を削除
+    // 木を見ているので、葉であることは次数1と同じ
+    let mut degree = vec![0; input.n];
+    let mut g = vec![vec![]; input.n];
+    let mut edge_to_index_map = FxHashMap::default();
+    for (i, b) in output.edges.iter().enumerate() {
+        if *b {
+            let e = &input.edges[i];
+            degree[e.0] += 1;
+            degree[e.1] += 1;
+            g[e.0].push(e.1);
+            g[e.1].push(e.0);
+            if e.0 < e.1 {
+                edge_to_index_map.insert((e.0, e.1), i);
+            } else {
+                edge_to_index_map.insert((e.1, e.0), i);
+            }
+        }
+    }
+    let mut que = VecDeque::new();
+    for (i, d) in degree.iter().enumerate() {
+        if *d == 1 {
+            que.push_back(i);
+        }
+    }
+    while !que.is_empty() {
+        let v = que.pop_front().unwrap();
+        if v != 0 && output.powers[v] == 0 {
+            for &u in g[v].iter() {
+                let i = if u < v {
+                    edge_to_index_map[&(u, v)]
+                } else {
+                    edge_to_index_map[&(v, u)]
+                };
+                if !output.edges[i] {
+                    continue;
+                }
+                output.edges[i] = false;
+                degree[u] -= 1;
+                if degree[u] == 1 {
+                    que.push_back(u);
+                }
+            }
+        }
+    }
     output.write();
     // eprintln!("{}", compute_score(&input, &output));
 }
