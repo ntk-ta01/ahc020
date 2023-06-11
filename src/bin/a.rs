@@ -169,7 +169,7 @@ fn climbing(
             }
         }
         let new_score = compute_score(input, &new_out);
-        if now_score < new_score {
+        if now_score <= new_score {
             now_score = new_score;
             *output = new_out;
         }
