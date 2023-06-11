@@ -142,34 +142,28 @@ fn annealing(
         let mut new_out = output.clone();
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
-        for _ in 0..rng.gen_range(1, 5) {
-            let mut rng_i = rng.gen_range(0, input.n);
-            while new_out.powers[rng_i] == 0 {
-                rng_i += 1;
-                rng_i %= input.n;
+        let rng_i = rng.gen_range(0, input.n);
+        new_out.powers[rng_i] = 0;
+        for (_, r) in input.residents.iter().enumerate() {
+            let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
+            let mut min_i = 0;
+            let mut contain = false;
+            for (i, station) in input.stations.iter().enumerate() {
+                if rng_i == i {
+                    continue;
+                }
+                let dist = r.calc_sq_dist(station);
+                let dist = (dist as f64).sqrt().ceil() as i32;
+                if min_dist > dist {
+                    min_dist = dist;
+                    min_i = i;
+                }
+                if dist <= new_out.powers[i] {
+                    contain = true;
+                }
             }
-            new_out.powers[rng_i] = 0;
-            for (_, r) in input.residents.iter().enumerate() {
-                let mut min_dist = (r.calc_sq_dist(&input.stations[0]) as f64).sqrt().ceil() as i32;
-                let mut min_i = 0;
-                let mut contain = false;
-                for (i, station) in input.stations.iter().enumerate() {
-                    if rng_i == i {
-                        continue;
-                    }
-                    let dist = r.calc_sq_dist(station);
-                    let dist = (dist as f64).sqrt().ceil() as i32;
-                    if min_dist > dist {
-                        min_dist = dist;
-                        min_i = i;
-                    }
-                    if dist <= new_out.powers[i] {
-                        contain = true;
-                    }
-                }
-                if !contain {
-                    new_out.powers[min_i] = min_dist;
-                }
+            if !contain {
+                new_out.powers[min_i] = min_dist;
             }
         }
         // edges について
