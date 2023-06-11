@@ -117,16 +117,14 @@ fn annealing(
 }
 
 fn compute_score(input: &Input, out: &Output) -> i64 {
-    let broadcasted_count = out.get_broadcasted_count(&input);
+    let broadcasted_count = out.get_broadcasted_count(input);
 
-    let score = if broadcasted_count < input.k {
+    if broadcasted_count < input.k {
         (1e6 * (broadcasted_count + 1) as f64 / input.k as f64).round() as i64
     } else {
         let cost = out.calc_cost(input);
         (1e6 * (1.0 + 1e8 / (cost as f64 + 1e7))).round() as i64
-    };
-
-    score
+    }
 }
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq, Hash)]
