@@ -8,7 +8,7 @@ fn main() {
     let input = read_input();
     let mut output = greedy(&input);
     // eprintln!("{}", compute_score(&input, &output));
-    annealing(&input, &mut output, &mut timer, &mut rng);
+    // annealing(&input, &mut output, &mut timer, &mut rng);
     output.write();
     // eprintln!("{}", compute_score(&input, &output));
 }
@@ -36,6 +36,19 @@ fn greedy(input: &Input) -> Output {
         if !contain {
             p[min_i] = min_dist;
         }
+    }
+    // 頂点0につながっている頂点で、現在の出力範囲内にいる最も遠い客は入るように出力を小さくする
+    // 客が出力範囲内にいないときは、出力を0にする
+    for (i, station) in input.stations.iter().enumerate() {
+        let mut max_dist = 0;
+        for r in input.residents.iter() {
+            let dist = r.calc_sq_dist(station);
+            let dist = (dist as f64).sqrt().ceil() as i32;
+            if dist <= p[i] && max_dist < dist {
+                max_dist = dist;
+            }
+        }
+        p[i] = max_dist;
     }
     let mut b = vec![false; input.m];
     // クラスカル
@@ -95,13 +108,12 @@ fn annealing(
             count = 0;
 
             // 頂点0につながっていない頂点のpowerを0に
-            let is_connected = output.get_connection_status(input);
-
-            for (i, b) in is_connected.iter().enumerate() {
-                if !*b {
-                    output.powers[i] = 0;
-                }
-            }
+            // let is_connected = output.get_connection_status(input);
+            // for (i, b) in is_connected.iter().enumerate() {
+            //     if !*b {
+            //         output.powers[i] = 0;
+            //     }
+            // }
             // 頂点0に繋がっていない辺をOFF に
             // for (i, e) in input.edges.iter().enumerate() {
             //     if !output.edges[i] {
@@ -113,23 +125,32 @@ fn annealing(
             // }
             // 頂点0につながっている頂点で、現在の出力範囲内にいる最も遠い客は入るように出力を小さくする
             // 客が出力範囲内にいないときは、出力を0にする
+            // for (i, station) in input.stations.iter().enumerate() {
+            //     let mut max_dist = 0;
+            //     for r in input.residents.iter() {
+            //         let dist = r.calc_sq_dist(station);
+            //         let dist = (dist as f64).sqrt().ceil() as i32;
+            //         if dist <= output.powers[i] && max_dist < dist {
+            //             max_dist = dist;
+            //         }
+            //     }
+            //     output.powers[i] = max_dist;
+            // }
         }
         count += 1;
 
         let mut new_out = output.clone();
         // 近傍解生成。powers と edges について同時焼きなまし
         // powers について
-        for _ in 0..5 {
-            let i = rng.gen_range(0, input.n);
-            if new_out.powers[i] >= 4974 {
-                new_out.powers[i] -= rng.gen_range(2, 25);
-            } else if new_out.powers[i] <= 26 {
-                new_out.powers[i] += rng.gen_range(2, 25);
-            } else if rng.gen_bool(0.5) {
-                new_out.powers[i] -= rng.gen_range(2, 25);
-            } else {
-                new_out.powers[i] += rng.gen_range(2, 25);
-            }
+        let i = rng.gen_range(0, input.n);
+        if new_out.powers[i] == 5000 {
+            new_out.powers[i] -= 1;
+        } else if new_out.powers[i] == 0 {
+            new_out.powers[i] += 1;
+        } else if rng.gen_bool(0.5) {
+            new_out.powers[i] -= 1;
+        } else {
+            new_out.powers[i] += 1;
         }
         // edges について
         // for _ in 0..5 {
