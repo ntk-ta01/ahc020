@@ -48,8 +48,8 @@ fn annealing(
     timer: &mut Timer,
     rng: &mut rand_chacha::ChaCha20Rng,
 ) -> i64 {
-    const T0: f64 = 10.0;
-    const T1: f64 = 0.1;
+    const T0: f64 = 10000.0;
+    const T1: f64 = 100.0;
     let mut temp = T0;
     let mut prob;
 
