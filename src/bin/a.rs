@@ -1,7 +1,6 @@
-use std::collections::VecDeque;
-
 use rand::prelude::*;
 use rustc_hash::FxHashMap;
+use std::collections::VecDeque;
 
 const TIMELIMIT: f64 = 1.65;
 
@@ -10,7 +9,7 @@ fn main() {
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(0);
     let input = read_input();
     let mut output = greedy(&input);
-    annealing(&input, &mut output, &mut timer, &mut rng);
+    climbing(&input, &mut output, &mut timer, &mut rng);
     // 葉であって、出力が0の駅につながる辺を削除
     // 木を見ているので、葉であることは次数1と同じ
     let mut degree = vec![0; input.n];
@@ -123,35 +122,27 @@ fn greedy(input: &Input) -> Output {
     }
 }
 
-fn annealing(
+fn climbing(
     input: &Input,
     output: &mut Output,
     timer: &mut Timer,
     rng: &mut rand_chacha::ChaCha20Rng,
-) -> i64 {
-    const T0: f64 = 100.0;
-    const T1: f64 = 100.0;
-    let mut temp = T0;
-    let mut prob;
-
+) {
     let mut count = 0;
     let mut now_score = compute_score(input, output);
 
-    let mut best_score = now_score;
-    let mut best_output = output.clone();
     loop {
         if count >= 100 {
             let passed = timer.get_time() / TIMELIMIT;
             if passed >= 1.0 {
                 break;
             }
-            temp = T0.powf(1.0 - passed) * T1.powf(passed);
             count = 0;
         }
         count += 1;
 
         let mut new_out = output.clone();
-        // 近傍解生成。powers について同時焼きなまし
+        // 近傍解生成。powers について山登り
         // powers について
         let rng_i = rng.gen_range(0, input.n);
         new_out.powers[rng_i] = 0;
@@ -178,20 +169,11 @@ fn annealing(
             }
         }
         let new_score = compute_score(input, &new_out);
-        prob = f64::exp((new_score - now_score) as f64 / temp);
-        if now_score < new_score || rng.gen_bool(prob) {
+        if now_score < new_score {
             now_score = new_score;
             *output = new_out;
         }
-
-        if best_score < now_score {
-            best_score = now_score;
-            best_output = output.clone();
-        }
     }
-    // eprintln!("{}", best_score);
-    *output = best_output;
-    best_score
 }
 
 fn compute_score(input: &Input, out: &Output) -> i64 {
