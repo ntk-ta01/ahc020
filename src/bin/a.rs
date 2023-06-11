@@ -1,3 +1,4 @@
+use itertools::Itertools;
 use rand::prelude::*;
 
 const TIMELIMIT: f64 = 1.95;
@@ -6,14 +7,14 @@ fn main() {
     let mut timer = Timer::new();
     let mut rng = rand_chacha::ChaCha20Rng::seed_from_u64(7_300_000_000);
     let input = read_input();
-    let mut output = greedy(&input);
+    let mut output = greedy(&input, &mut rng);
     annealing(&input, &mut output, &mut timer, &mut rng);
     output.write();
 }
 
-fn greedy(input: &Input) -> Output {
+fn greedy(input: &Input, rng: &mut rand_chacha::ChaCha20Rng) -> Output {
     let p = vec![2500; input.n];
-    let b = vec![true; input.m];
+    let b = (0..input.m).map(|_| rng.gen_bool(0.5)).collect_vec();
 
     Output {
         powers: p,
