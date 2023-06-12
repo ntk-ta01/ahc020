@@ -487,9 +487,9 @@ pub fn vis(input: &Input, out: &Output) -> String {
         let circle = Circle::new()
             .set("cx", cx)
             .set("cy", cy)
-            .set("r", 4)
-            .set("stroke", "gray")
-            .set("stoke-width", 1)
+            .set("r", 4 * 2)
+            .set("stroke", "red")
+            .set("stoke-width", 2)
             .set("fill", color)
             .set("class", "resident");
         doc = doc.add(Group::new().add(title).add(circle))
@@ -526,7 +526,7 @@ pub fn vis(input: &Input, out: &Output) -> String {
             .set("x2", x2)
             .set("y2", y2)
             .set("stroke", "gray")
-            .set("stroke-width", width)
+            .set("stroke-width", width * 4.0)
             .set("class", format!("edge{}", j + 1))
             .set(
                 "onmouseover",
@@ -560,8 +560,8 @@ pub fn vis(input: &Input, out: &Output) -> String {
 
         let title = Title::new().add(Text::new(title));
 
-        const SIZE_SMALL: f64 = 10.0;
-        const SIZE_LARGE: f64 = 13.0;
+        const SIZE_SMALL: f64 = 20.0;
+        const SIZE_LARGE: f64 = 23.0;
         let x0 = scale(station.x + MAP_SIZE) - SIZE_SMALL / 2.0;
         let y0 = scale_y(station.y + MAP_SIZE) - SIZE_SMALL / 2.0;
         let x1 = scale(station.x + MAP_SIZE) - SIZE_LARGE / 2.0;
@@ -575,7 +575,7 @@ pub fn vis(input: &Input, out: &Output) -> String {
             .set("width", SIZE_SMALL)
             .set("height", SIZE_SMALL)
             .set("stroke", "gray")
-            .set("stroke-width", stroke_width)
+            .set("stroke-width", stroke_width * 1.5)
             .set("fill", color)
             .set("class", format!("vertex{}", i + 1))
             .set(

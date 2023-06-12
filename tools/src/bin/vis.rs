@@ -22,7 +22,7 @@ fn main() {
     });
     let input = parse_input(&input);
     let out = parse_output(&input, &output);
-    let ((score, _err), _svg) = match out {
+    let ((score, err), svg) = match out {
         Ok(out) if out.len() > 0 => {
             let out = out.last().unwrap();
             (compute_score(&input, out), vis(&input, out))
@@ -31,9 +31,9 @@ fn main() {
         Err(err) => ((0, err), String::new()),
     };
     println!("Score = {}", score);
-    // if err.len() > 0 {
-    //     println!("{}", err);
-    // }
-    // let vis = format!("<html><body>{}</body></html>", svg);
-    // std::fs::write("vis.html", &vis).unwrap();
+    if err.len() > 0 {
+        println!("{}", err);
+    }
+    let vis = format!("<html><body>{}</body></html>", svg);
+    std::fs::write("vis.html", &vis).unwrap();
 }
